@@ -3,10 +3,10 @@ port module Main exposing (..)
 import Api
 
 
-port sendResponse : ( Int, Maybe String ) -> Cmd msg
+port sendResponse : ( Int, Int, Maybe String ) -> Cmd msg
 
 
-port receiveRequest : (( String, String, Maybe String ) -> msg) -> Sub msg
+port receiveRequest : ({ requestId : Int, method : String, path : String, body : Maybe String } -> msg) -> Sub msg
 
 
 type alias Model =
@@ -14,7 +14,7 @@ type alias Model =
 
 
 type Msg
-    = GotRequest ( String, String, Maybe String )
+    = GotRequest { requestId : Int, method : String, path : String, body : Maybe String }
 
 
 main : Program () Model Msg
@@ -27,9 +27,9 @@ main =
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update (GotRequest ( method, path, body )) model =
+update (GotRequest request) model =
     let
-        response =
-            Api.handle { method = method, path = path, body = body }
+        ( statusCode, responseBody ) =
+            Api.handle { method = request.method, path = request.path, body = request.body }
     in
-    ( model, sendResponse response )
+    ( model, sendResponse ( request.requestId, statusCode, responseBody ) )
